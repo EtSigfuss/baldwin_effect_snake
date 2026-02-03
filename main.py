@@ -21,8 +21,8 @@ hidden_size = 2**3
 output_size = len(ACTIONS)
 
 # GA hyperparams
-pop = 20
-generations = 10
+pop = 50
+generations = 50
 mutation_rate = 0.10
 mutation_scale = 0.4
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
