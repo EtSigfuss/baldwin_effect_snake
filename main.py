@@ -12,20 +12,20 @@ rng = np.random.default_rng(seed_value)#global rng
 #enviroment parames
 height = 10
 width = 10
-lifespan = 5000
+lifespan = 20000
 
 #NN params
 episodes_per_life = 10
 input_size = len(SNAKE_FEATURE_COLS)
-hidden_size = 2**4
+hidden_size = 2**3
 output_size = len(ACTIONS)
 
 # GA hyperparams
-pop = 50
+pop = 20
 generations = 10
 mutation_rate = 0.10
 mutation_scale = 0.4
-gene_size = input_size*hidden_size+hidden_size+hidden_size*output_size + output_size
+gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
 #observation settings
 watch_mod = 0
@@ -111,7 +111,20 @@ def fitness_func_instinct(ga_instance, solution, solution_idx):
     env.close()
     return total_score/episodes_per_life
 
-
+print("seed_value: ", seed_value)
+print("height: ", height)
+print("width: ",width)
+print()
+print("episodes_per_life: ", episodes_per_life)
+print("input_size: ", input_size)
+print("hidden size: ", hidden_size)
+print("output_size: ",output_size)
+print()
+print("pop: ", pop)
+print("generations: ", generations)
+print("mutation rate: ",mutation_rate)
+print("mutation scale: ", mutation_scale)
+print("gene size: ",gene_size)
 
 ga_intinct = pygad.GA(num_generations=generations,
             sol_per_pop= pop,
@@ -123,14 +136,6 @@ ga_intinct = pygad.GA(num_generations=generations,
             fitness_func=fitness_func_instinct,
             )
 
-
-ga_intinct.run()
-
-print("done instinct")
-
-instinct_solution, solution_fitness, solution_idx = ga_intinct.best_solution()
-    
-#bald ga time
 bald_ga = pygad.GA(num_generations=generations,
             sol_per_pop= pop,
             num_genes= gene_size,
@@ -141,45 +146,70 @@ bald_ga = pygad.GA(num_generations=generations,
             fitness_func=fitness_func_learning,
             )
 
-bald_ga.run()
+arch_runs = 5
+trial_amt = 10
+instinct_total = 0
+bald_total = 0
 
-print("done bald, enter any input to watch trials")
-input()
+for _ in range(arch_runs):
+    print("arch run: ", _)
 
-bald_solution, solution_fitness, solution_idx = bald_ga.best_solution()
+    ga_intinct.run()
 
-instinct_agent = Agent(solution=instinct_solution,
-                  input_size=input_size,
-                  hidden_size=hidden_size,
-                  output_size = output_size)
+    print("done instinct")
 
-bald_agent = Agent(solution=bald_solution,
-                  input_size=input_size,
-                  hidden_size=hidden_size,
-                  output_size = output_size)
+    instinct_solution, solution_fitness, solution_idx = ga_intinct.best_solution()
+        
+    #bald ga time
 
 
-trial_env = Snake(
-        width=width,
-        height=height,
-        lifespan=lifespan,
-        state_includes_location=False,
-        state_includes_sensory=True,
-        render_mode="pygame",
-        seed=seed_value,
-        frame_rate=20
-        )
-instinct_score = 0
-for i in range(5):
-    instinct_score += run_episode(env=trial_env,
-                render=True, agent=instinct_agent)
+    bald_ga.run()
 
-bald_score = 0
-for i in range(5):
-    bald_score += run_episode(env=trial_env,
-                render=True, agent=bald_agent)
-    
-print("instinct score ", instinct_score)
-print("bald score ", bald_score)
+    print("done bald")
+
+    bald_solution, solution_fitness, solution_idx = bald_ga.best_solution()
+
+    instinct_agent = Agent(solution=instinct_solution,
+                    input_size=input_size,
+                    hidden_size=hidden_size,
+                    output_size = output_size,
+                    episodes= trial_amt)
+
+    bald_agent = Agent(solution=bald_solution,
+                    input_size=input_size,
+                    hidden_size=hidden_size,
+                    output_size = output_size,
+                    episodes= trial_amt)
+
+
+    trial_env = Snake(
+            width=width,
+            height=height,
+            lifespan=lifespan,
+            state_includes_location=False,
+            state_includes_sensory=True,
+            render_mode="pygame",
+            seed=seed_value,
+            frame_rate=60
+            )
+    instinct_score = 0
+    for i in range(trial_amt):
+        instinct_score += run_episode(env=trial_env,
+                    render=True, agent=instinct_agent)
+
+    bald_score = 0
+    for i in range(trial_amt):
+        bald_score += run_episode(env=trial_env,
+                    render=True, agent=bald_agent, learn= True)
+        
+    print("instinct score ", instinct_score)
+    print("bald score ", bald_score)
+
+    instinct_total += instinct_score
+    bald_total += bald_score
+    trial_env.close()
+
+print("instinct total: ",instinct_total)
+print("bald total: ", bald_total)
 
 
