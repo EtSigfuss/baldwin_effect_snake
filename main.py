@@ -1,7 +1,7 @@
 import numpy as np
 import pygad
 
-from constants import SNAKE_FEATURE_COLS, episodes_per_life
+from constants import ACTIONS, SNAKE_FEATURE_COLS
 from snake import Snake
 from solve_snake import run_episode
 from torch_logic import Agent
@@ -14,47 +14,49 @@ height = 10
 width = 10
 lifespan = 5000
 
+#NN params
+episodes_per_life = 10
+input_size = len(SNAKE_FEATURE_COLS)
+hidden_size = 2**4
+output_size = len(ACTIONS)
+
 # GA hyperparams
 pop = 50
-generations = 50
+generations = 10
 mutation_rate = 0.10
 mutation_scale = 0.4
+gene_size = input_size*hidden_size+hidden_size+hidden_size*output_size + output_size
 
-#Torch params
-learn_rate = 0.01
-learn_rate_floor = 0.01
-learn_rate_decay = (learn_rate_floor/learn_rate)**(1/episodes_per_life)
-explore_rate = 0.2
-explore_rate_floor = 0.001
-explore_rate_decay_generation = (explore_rate_floor/explore_rate)**(1/generations)
-explore_rate_decay_episode = (explore_rate_floor/explore_rate)**(1/episodes_per_life)
-discount = 0.95
+#observation settings
+watch_mod = 0
 
 def fitness_func_learning(ga_instance, solution, solution_idx):
     """
     An attempt at using deep q learning via torch for running snake
 
     """
-    global watch_mod
 
     render_mode_life = None
     render_life = False
 
+    global watch_mod
+
     
-    #allows you to watch the elite of prev gen
-    if watch_mod % pop == 0:
-        render_mode_life = "pygame"
-        render_life = True
+    # #allows you to watch the elite of prev gen
+    # if watch_mod % pop == 0:
+    #     render_mode_life = "pygame"
+    #     render_life = True
+    # watch_mod += 1
 
 
-    watch_mod += 1
-
-    agent = Agent()
+    agent = Agent(solution=solution,
+                  input_size=input_size,
+                  hidden_size=hidden_size,
+                  output_size = output_size
+                  )
 
     total_score = 0
 
-    # generation_learn_rate = learn_rate*learn_rate_decay**generation
-    # generation_explore_rate = explore_rate*explore_rate_decay_generation**generation
     env = Snake(
         width=width,
         height=height,
@@ -62,12 +64,11 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
         state_includes_location=False,
         state_includes_sensory=True,
         render_mode=render_mode_life,
-        seed=rng.integers(1,1000000),
+        seed=int(rng.integers(1,1000000)),
         frame_rate=60
         )
     for _ in range(episodes_per_life):
-        _, score = run_episode(env=env,
-                                discount=discount,
+        score = run_episode(env=env,
                                 learn=True,
                                 render=render_life,
                                 agent=agent
@@ -96,70 +97,89 @@ def fitness_func_instinct(ga_instance, solution, solution_idx):
         render_mode=None,
         seed=seed_value
         )
+    
+    agent = Agent(solution=solution,
+                  input_size=input_size,
+                  hidden_size=hidden_size,
+                  output_size = output_size
+                  )
 
     for _ in range(episodes_per_life):
-        _, score = run_episode(env=env,
-                            solution=solution)
+        score = run_episode(env=env, learn=False, agent=agent)
         total_score += score
         env.reset()
     env.close()
     return total_score/episodes_per_life
 
-env = Snake(
+
+
+ga_intinct = pygad.GA(num_generations=generations,
+            sol_per_pop= pop,
+            num_genes= gene_size,
+            num_parents_mating=5,
+            mutation_percent_genes= mutation_scale,
+            mutation_probability= mutation_rate,
+            mutation_type='random',
+            fitness_func=fitness_func_instinct,
+            )
+
+
+ga_intinct.run()
+
+print("done instinct")
+
+instinct_solution, solution_fitness, solution_idx = ga_intinct.best_solution()
+    
+#bald ga time
+bald_ga = pygad.GA(num_generations=generations,
+            sol_per_pop= pop,
+            num_genes= gene_size,
+            num_parents_mating=5,
+            mutation_percent_genes= mutation_scale,
+            mutation_probability= mutation_rate,
+            mutation_type='random',
+            fitness_func=fitness_func_learning,
+            )
+
+bald_ga.run()
+
+print("done bald, enter any input to watch trials")
+input()
+
+bald_solution, solution_fitness, solution_idx = bald_ga.best_solution()
+
+instinct_agent = Agent(solution=instinct_solution,
+                  input_size=input_size,
+                  hidden_size=hidden_size,
+                  output_size = output_size)
+
+bald_agent = Agent(solution=bald_solution,
+                  input_size=input_size,
+                  hidden_size=hidden_size,
+                  output_size = output_size)
+
+
+trial_env = Snake(
         width=width,
         height=height,
         lifespan=lifespan,
         state_includes_location=False,
         state_includes_sensory=True,
         render_mode="pygame",
-        seed=seed_value
+        seed=seed_value,
+        frame_rate=20
         )
+instinct_score = 0
+for i in range(5):
+    instinct_score += run_episode(env=trial_env,
+                render=True, agent=instinct_agent)
 
-ga = pygad.GA(num_generations=generations,
-            sol_per_pop= pop,
-            num_genes= (len(SNAKE_FEATURE_COLS)+1)*4,
-            num_parents_mating=5,
-            mutation_percent_genes= mutation_scale,
-            mutation_probability= mutation_rate,
-            mutation_type='random',
-            fitness_func=fitness_func_instinct,
-            )
-
-
-ga.run()
-
-print("done instinct")
-input()
-
-solution, solution_fitness, solution_idx = ga.best_solution()
-
-for i in range(1,10):
-    run_episode(env=env,
-                solution=solution,
-                render=True)
+bald_score = 0
+for i in range(5):
+    bald_score += run_episode(env=trial_env,
+                render=True, agent=bald_agent)
     
-#bald ga time
-bald_ga = pygad.GA(num_generations=generations,
-            sol_per_pop= pop,
-            num_genes= (len(SNAKE_FEATURE_COLS)+1)*4,
-            num_parents_mating=5,
-            mutation_percent_genes= mutation_scale,
-            mutation_probability= mutation_rate,
-            mutation_type='random',
-            fitness_func=fitness_func_instinct,
-            )
-
-bald_ga.run()
-
-print("done instinct")
-input()
-
-solution, solution_fitness, solution_idx = ga.best_solution()
-
-for i in range(1,10):
-    run_episode(env=env,
-                solution=solution,
-                render=True)
+print("instinct score ", instinct_score)
+print("bald score ", bald_score)
 
 
-print(solution)

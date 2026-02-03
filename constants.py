@@ -1,4 +1,3 @@
-episodes_per_life = 10 
 
 ACTIONS = [0, 1, 2, 3]  # up, right, down, left
 
