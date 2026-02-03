@@ -169,11 +169,12 @@ trial_env = Snake(
         seed=seed_value,
         frame_rate=20
         )
+print("instict trials")
 instinct_score = 0
 for i in range(5):
     instinct_score += run_episode(env=trial_env,
                 render=True, agent=instinct_agent)
-
+print("bald trials")
 bald_score = 0
 for i in range(5):
     bald_score += run_episode(env=trial_env,
