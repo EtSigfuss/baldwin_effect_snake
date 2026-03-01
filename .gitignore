@@ -3,3 +3,5 @@ __pycache__
 .venv
 myenv
 todo.txt
+ga_results_*
+baldwin_explore_results

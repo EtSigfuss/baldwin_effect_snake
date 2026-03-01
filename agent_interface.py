@@ -33,7 +33,6 @@ def run_episode(agent:Agent, env, learn=False, render=False,):
     """
     
     """
-
     state = env.reset()
     total_reward = 0.0
 

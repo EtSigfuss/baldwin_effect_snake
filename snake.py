@@ -3,6 +3,8 @@ from collections import deque
 
 import numpy as np
 
+from constants import DIRECTIONS
+
 try:
     import pygame
     PYGAME_AVAILABLE = True
@@ -10,7 +12,8 @@ except Exception:
     PYGAME_AVAILABLE = False
 
 # 0 = UP, 1 = RIGHT, 2 = DOWN, 3 = LEFT
-ACTIONS = [(0,-1), (1,0), (0,1), (-1,0)]
+VELOCITY = [(0,-1), (1,0), (0,1), (-1,0)]
+
 
 class Snake:
     """
@@ -32,18 +35,16 @@ class Snake:
         height=20,
         init_length=3,
         lifespan=5000,
-        state_includes_location=True,
         state_includes_sensory=True,
         render_mode=None,
         seed=None,
-        hunger_cap=80,
+        hunger_cap=80,  #make it starve if it doesn't bring joy
         frame_rate = 20,
     ):
         self.width = width
         self.height = height
         self.init_length = init_length
         self.lifespan = lifespan
-        self.state_includes_location = state_includes_location
         self.state_includes_sensory = state_includes_sensory
         self.render_mode = render_mode if (render_mode == "pygame" and PYGAME_AVAILABLE) else None
         self.hunger_cap = hunger_cap
@@ -104,6 +105,13 @@ class Snake:
         self.score = 0
         self.hunger = self.hunger_cap
         return self._get_state()
+    
+    def change_direction(self, action):
+        if action == 0:
+            self.direction = DIRECTIONS[self.direction-1]
+        elif action == 2:
+            self.direction = DIRECTIONS[(self.direction+1)%len(DIRECTIONS)]
+
 
     def step(self, action):
         """
@@ -119,12 +127,11 @@ class Snake:
             self.done = True
             return self._get_state(), reward, self.done, {"reason":"starved :("}
 
-        # prevent direct reversal
-        if abs(action - self.direction) == 2:
-            action = self.direction  # ignore reverse
-
-        self.direction = action
-        dx, dy = ACTIONS[action]
+        # # prevent direct reversal
+        # if abs(action - self.direction) == 2:
+        #     action = self.direction  # ignore reverse
+        self.change_direction(action)
+        dx, dy = VELOCITY[self.direction]
         headx, heady = self.snake[0]
         new_head = (headx + dx, heady + dy)
 
@@ -166,7 +173,7 @@ class Snake:
 
         return self._get_state(), reward, self.done, {"ate": ate}
 
-    def render(self, scale=20):
+    def render(self, scale=20, epsilon = None):
         if self.render_mode != 'pygame':
             # simple ASCII render if pygame not available
             grid = [['.' for _ in range(self.width)] for __ in range(self.height)]
@@ -183,7 +190,7 @@ class Snake:
         if not PYGAME_AVAILABLE:
             return
         
-        self._draw()
+        self._draw(epsilon=epsilon)
 
     def close(self):
         if self.render_mode == 'pygame' and PYGAME_AVAILABLE:
@@ -192,30 +199,44 @@ class Snake:
     # ---------- State representation ----------
     def _get_state(self):
         headx, heady = self.snake[0]
+        
+        #get current direction
+        dir_x, dir_y = VELOCITY[self.direction]
+
+        #rotate vector
+        right_x,right_y = -dir_y, dir_x
+        
+        
         state = {}
 
-        if self.state_includes_location:
-            state["x"], state["y"] = headx, heady
-
         # Food direction & normalized distance
-        state["food_dx_sign"] = state["food_dy_sign"] = 0.0
+        state["food_front/back_norm"] = state["food_left/right_norm"] = 0.0
         if self.food is None:
             self._place_food()
         if self.food:
             fx, fy = self.food
             dx, dy = fx - headx, fy - heady
-            state["food_dx_sign"] = float(np.sign(dx))
-            state["food_dy_sign"] = float(np.sign(dy))
-            max_dist = (self.width - 1) + (self.height - 1)
 
+            v_fx, v_fy = fx-headx, fy-heady
+
+            state["food_front/back_norm"] = (v_fx * dir_x + v_fy * dir_y) / max(self.height,self.width)
+            state["food_left/right_norm"] = (v_fx*right_x + v_fy * right_y) /max(self.height,self.width)
+
+        # Direction
         # Sensory: walls/body -> obstacle flags
-        if self.state_includes_sensory:
-            for name, (dx, dy) in zip(["up", "right", "down", "left"], ACTIONS):
-                nx, ny = headx + dx, heady + dy
-                is_wall = not self._inside((nx, ny))
-                is_body = (nx, ny) in self.snake
-                state[f"obstacle_{name}"] = 1 if (is_wall or is_body) else 0
-                # NOTE: no more food_{name} flags – redundant with dx/dy + dist
+        rel_dirs = {
+            "obstacle_front": (dir_x, dir_y),
+            "obstacle_right": (right_x, right_y),
+            "obstacle_left":  (-right_x, -right_y)
+        }
+
+        for key, (off_x, off_y) in rel_dirs.items():
+            check_pos = (headx + off_x, heady + off_y)
+            is_collision = (
+                not self._inside(check_pos) or
+                (check_pos in self.snake)
+            )
+            state[key] = 1.0 if is_collision else 0.0
 
         return state
 
@@ -230,7 +251,7 @@ class Snake:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont('Arial', 18)
 
-    def _draw(self):
+    def _draw(self, epsilon = None):
         # draws current grid
         self.screen.fill((30,30,30))
         # draw grid cells
@@ -260,8 +281,12 @@ class Snake:
                                 self.cell_size, self.cell_size)
             pygame.draw.rect(self.screen, (200,0,0), rect)
             
-        # draw score
+        # draw score and other notable details
         score_surf = self.font.render(f"Score: {self.score}", True, (255,255,255))
         self.screen.blit(score_surf, (5,5))
+        if epsilon:
+            epsilon_surf = self.font.render(f"epsilon: {epsilon:.2f}", True, (255,255,255))
+            self.screen.blit(epsilon_surf, (5 + score_surf.get_width() + 20, 5))
+        
         pygame.display.flip()
         self.clock.tick(self.framerate)  # limit FPS

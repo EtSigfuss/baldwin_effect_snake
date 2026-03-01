@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from constants import SNAKE_FEATURE_COLS
+from constants import ACTIONS, SNAKE_FEATURE_COLS
 
 
 class QTrainer:
@@ -16,7 +16,7 @@ class QTrainer:
         self.criterion = nn.MSELoss()
 
     def train_step(self, state, action, reward, next_state, done):
-        #turns all inputs into tensors and adds a dimension for complacency with torch achitecturte
+        #turns all inputs into tensors and adds a dimension for complacency with torch achitecture
         state = torch.tensor(list(state.values()), dtype=torch.float).unsqueeze(0)
         next_state = torch.tensor(list(next_state.values()), dtype=torch.float).unsqueeze(0)
         action = torch.tensor(action, dtype=torch.long).unsqueeze(0)
@@ -92,24 +92,27 @@ class Linear_Q(nn.Module):
     
 
 class Agent:
-    def __init__(self,solution = None, episodes = 10, input_size = 10, hidden_size = 10, output_size = 10):
-        self.epsilon = 1.0  # Start with 100% exploration
-        self.min_epsilon = 0.0001
+    def __init__(self,solution = None, decay_actions = 100, input_size = 10, hidden_size = 10, output_size = 10, epsilon = .5):
+        self.epsilon = epsilon
+        self.min_epsilon = 0.01
         #smooth decay of epsilon
-        self.decay_rate = (self.min_epsilon/self.epsilon)**(1/episodes)
+        self.decay_rate = (self.min_epsilon/self.epsilon)**(1/decay_actions)
         self.learn_rate = 0.01
         self.gamma = 0.9
         self.model = Linear_Q(solution=solution, input_size=input_size,hidden_size=hidden_size, output_size=output_size)
         self.trainer = QTrainer(self.model, lr=0.001, gamma=self.gamma)
 
 
-    def get_action(self, state):
+    def get_action(self, state, use_epsilon = True):
+        #for purely evaluating the learned weights
+        if not use_epsilon:
+            self.epsilon = 0
         # Update epsilon based on game count
         self.epsilon = max(self.min_epsilon, self.epsilon * self.decay_rate)
         
         #random move
         if random.random() < self.epsilon:
-            move = random.randint(0, 3)
+            move = random.randint(0,len(ACTIONS)-1)
 
         #predicted move
         else:
@@ -121,7 +124,7 @@ class Agent:
     def train(self, old_state, action, reward, new_state, done):
             # convert action to a vector then train.
             # this is nessecarry to match q trainer argmax
-            action_vector = [0, 0, 0, 0]
+            action_vector = [0]*len(ACTIONS)
             action_vector[action] = 1
             
             self.trainer.train_step(old_state, action_vector, reward, new_state, done)
