@@ -39,11 +39,8 @@ gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + out
 #observation settings
 fitness_eval_count = 0
 generation_high_score = 0
-learned_weights_store = {}
+starting_and_learned_weights_store = {}
 
-#trial and arch runs
-arch_runs = 5
-trial_amt = 10
 
 
 def fitness_func_learning(ga_instance, solution, solution_idx):
@@ -51,7 +48,7 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
     An attempt at using deep q learning via torch for running snake
 
     """
-    global learned_weights_store
+    global starting_and_learned_weights_store
     current_gen = ga_instance.generations_completed
 
 
@@ -92,14 +89,14 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
 
     #capture all of first gen and in dict with total score agent and genes
 
-    learned_weights_store[current_gen,solution_idx] = (score,agent,solution)
+    starting_and_learned_weights_store[current_gen,solution_idx] = (score,agent,solution)
         
     
 
     return total_score
 
 def extract_best_agent_from_gen(gen):
-    gen_data = {k: v for k, v in learned_weights_store.items() if k[0] == gen}
+    gen_data = {k: v for k, v in starting_and_learned_weights_store.items() if k[0] == gen}
     best_gen_key = max(gen_data, key = lambda k: gen_data[k][0])
     return  gen_data[best_gen_key]
 
@@ -187,8 +184,9 @@ if __name__ == "__main__":
         "obstacle_right": 0.0, 
         "obstacle_left": 1.0
     }
-]
-
+]       
+    for state in test_states:
+        print(state)
 
     for gen in range(generations):
         score, agent, genes = extract_best_agent_from_gen(gen)
@@ -196,7 +194,7 @@ if __name__ == "__main__":
                         input_size=input_size,
                         hidden_size=hidden_size,
                         output_size = output_size,
-                        decay_actions= trial_amt)
+                        )
         
         agent_actions = []
         agent_instinct_actions = []
@@ -208,4 +206,3 @@ if __name__ == "__main__":
         print(f"intinct actions {agent_instinct_actions}")
         print(f"learned actions {agent_actions}")
         print(f"learned score = {score}")
-        

@@ -24,7 +24,6 @@ class Snake:
       init_length            : starting snake length
       lifespan               : maximum steps per episode (agent's lifetime)
       seed                   : random seed (optional)
-      state_includes_location: include agent absolute location in state dict
       state_includes_sensory : include local sensory info (neighbors)
       render_mode            : None or 'pygame' (pygame required)
     """

@@ -23,14 +23,14 @@ width = 10
 lifespan = 20000
 
 #NN params
-episodes_per_life = 15
+episodes_per_life = 10
 input_size = len(SNAKE_FEATURE_COLS)
 hidden_size = 2**3
 output_size = len(ACTIONS)
 
 # GA hyperparams
 pop = 50
-generations = 20
+generations = 45
 mutation_rate = 0.10
 mutation_scale = 0.10
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
@@ -39,7 +39,7 @@ gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + out
 watch_mod = 0
 
 #trial and arch runs
-arch_runs = 20
+arch_runs = 10
 trial_amt = 10
 
 def fitness_func_learning(ga_instance, solution, solution_idx):
@@ -64,7 +64,7 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
                   hidden_size=hidden_size,
                   output_size = output_size,
                   epsilon=.2,
-                  decay_actions=100,
+                  decay_actions=1000,
                   )
 
     total_score = 0
@@ -79,6 +79,8 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
         frame_rate=60
         )
     for _ in range(episodes_per_life):
+        if _ == episodes_per_life:
+            agent.epsilon = 0 #to give a bigger impact to learned weights
         score = run_episode(env=env,
                                 learn=True,
                                 render=render_life,
@@ -137,8 +139,8 @@ if __name__ == "__main__":
     print("mutation scale: ", mutation_scale)
     print("gene size: ",gene_size)
 
-    results = pd.DataFrame(columns=['run#', 'instinct score' ,'bald score'])
-
+    # results = pd.DataFrame(columns=['run#', 'instinct score' ,'bald score'])
+    results = []
     instinct_total = 0
     bald_total = 0
 
@@ -194,7 +196,8 @@ if __name__ == "__main__":
                 height=height,
                 lifespan=lifespan,
                 state_includes_sensory=True,
-                render_mode="pygame",
+                # render_mode="pygame",
+                render_mode = None,
                 seed=seed_value,
                 frame_rate=60
                 )
@@ -215,14 +218,29 @@ if __name__ == "__main__":
         bald_total += bald_score
         trial_env.close()
 
-        current_results = pd.DataFrame({'run#': _, 'instinct score': instinct_score ,'bald score':bald_score})
-        results = pd.concat([results, current_results], ignore_index=True)
+        # current_results = pd.DataFrame({'run#': _, 'instinct score': instinct_score ,'bald score':bald_score})
+        # results = pd.concat([results, current_results], ignore_index=True)
+        results.append({
+        'run#': _,
+        'instinct score': instinct_score,
+        'bald score': bald_score
+    })
 
 
     print("instinct total: ",instinct_total)
     print("bald total: ", bald_total)
 
-    results['bald average'] = results['bald score'].mean()
-    results['instinct average'] = results['instinct score'].mean()
+    results_df = pd.DataFrame(results)
+    
+    instinct_average = results_df['instinct score'].mean()
+    bald_average = results_df['bald score'].mean()
 
-    results.to_csv('baldwin_instinct_compare_results/results', mode='a', index=False, header=False)
+    summary = {
+        'run#': 'average',
+        'instinct score': instinct_average,
+        'bald score': bald_average
+    }
+
+    results_df = pd.concat([results_df, pd.DataFrame([summary])], ignore_index=True)
+
+    results_df.to_csv('baldwin_instinct_compare_results/results.csv', index=False, header=True)

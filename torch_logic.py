@@ -92,7 +92,7 @@ class Linear_Q(nn.Module):
     
 
 class Agent:
-    def __init__(self,solution = None, decay_actions = 100, input_size = 10, hidden_size = 10, output_size = 10, epsilon = .5):
+    def __init__(self,solution = None, decay_actions = 1000, input_size = 10, hidden_size = 10, output_size = 10, epsilon = .5):
         self.epsilon = epsilon
         self.min_epsilon = 0.01
         #smooth decay of epsilon
