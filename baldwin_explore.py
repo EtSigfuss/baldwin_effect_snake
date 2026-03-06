@@ -5,7 +5,9 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 warnings.filterwarnings("ignore", category=UserWarning, module='pygame.pkgdata')
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 
+import statistics
 import sys
+from collections import defaultdict
 
 import numpy as np
 import pygad
@@ -31,21 +33,20 @@ output_size = len(ACTIONS)
 
 # GA hyperparams
 pop = 50
+num_parents_mating = int(pop*.30)
 generations = 50
-mutation_rate = 0.10
-mutation_scale = 0.10
+mutation_probability = 0.05
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
 #observation settings
 fitness_eval_count = 0
 generation_high_score = 0
-starting_and_learned_weights_store = {}
+starting_and_learned_weights_store = defaultdict(list)
 
 
 
 def fitness_func_learning(ga_instance, solution, solution_idx):
     """
-    An attempt at using deep q learning via torch for running snake
 
     """
     global starting_and_learned_weights_store
@@ -87,9 +88,9 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
     env.close()
 
 
-    #capture all of first gen and in dict with total score agent and genes
+    #capture all agents and starting weights in a gen index dict 
 
-    starting_and_learned_weights_store[current_gen,solution_idx] = (score,agent,solution)
+    starting_and_learned_weights_store[current_gen].append((score,agent,solution))
         
     
 
@@ -99,6 +100,38 @@ def extract_best_agent_from_gen(gen):
     gen_data = {k: v for k, v in starting_and_learned_weights_store.items() if k[0] == gen}
     best_gen_key = max(gen_data, key = lambda k: gen_data[k][0])
     return  gen_data[best_gen_key]
+
+def get_median_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
+    """
+    gets the median actions for a game state
+    """
+    global starting_and_learned_weights_store
+
+    #list of actions of all agents of a generation for a state
+    agent_final_actions = []
+    agent_instinct_actions = []
+    #iterate through all instinct and final agents of a generation and get the median actions
+    scores = []
+    for score, final_agent, solution in starting_and_learned_weights_store[gen]:
+
+        agent_instinct = Agent(solution=solution,
+                        input_size=input_size,
+                        hidden_size=hidden_size,
+                        output_size = output_size,
+                        )
+        
+        
+        
+        agent_final_actions.append(final_agent.get_action(featurize_state(state),False))
+        agent_instinct_actions.append(agent_instinct.get_action(featurize_state(state),False))
+        scores.append(score)
+        
+    instinct_median_action = statistics.median(agent_instinct_actions)
+    final_median_action = statistics.median(agent_final_actions)
+    mean_score = statistics.mean(scores)
+
+    return mean_score, instinct_median_action, final_median_action
+
 
 
 if __name__ == "__main__":
@@ -112,9 +145,9 @@ if __name__ == "__main__":
     print("output_size: ",output_size)
     print()
     print("pop: ", pop)
+    print("parents mating: ",num_parents_mating)
     print("generations: ", generations)
-    print("mutation rate: ",mutation_rate)
-    print("mutation scale: ", mutation_scale)
+    print("mutation probability: ",mutation_probability)
     print("gene size: ",gene_size)
 
 
@@ -122,12 +155,12 @@ if __name__ == "__main__":
                 sol_per_pop= pop,
                 num_genes= gene_size,
                 keep_elitism=3,
-                num_parents_mating=5,
-                mutation_percent_genes= mutation_scale,
-                mutation_probability= mutation_rate,
+                num_parents_mating=num_parents_mating,
+                mutation_probability= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_learning,
                 # parallel_processing=['process', 4]
+                crossover_type="uniform"
                 )
 
     bald_total = 0
@@ -188,21 +221,19 @@ if __name__ == "__main__":
     for state in test_states:
         print(state)
 
+
     for gen in range(generations):
-        score, agent, genes = extract_best_agent_from_gen(gen)
-        agent_instinct = Agent(solution=genes,
-                        input_size=input_size,
-                        hidden_size=hidden_size,
-                        output_size = output_size,
-                        )
-        
-        agent_actions = []
-        agent_instinct_actions = []
-        for state in test_states:
-            agent_actions.append(ACTION_STRING[agent.get_action(featurize_state(state),False)])
-            agent_instinct_actions.append(ACTION_STRING[agent_instinct.get_action(featurize_state(state),False)])
-        
         print(f"Generation {gen}")
-        print(f"intinct actions {agent_instinct_actions}")
-        print(f"learned actions {agent_actions}")
-        print(f"learned score = {score}")
+        state_actions_instinct = []
+        state_actions_final = []
+
+        for state in test_states:
+            mean_score, instinct_median_action, final_median_action =get_median_gen_learned_n_instinct_action(gen, state,)
+            state_actions_instinct.append(ACTION_STRING[int(instinct_median_action)])
+            state_actions_final.append(ACTION_STRING[int(final_median_action)])
+
+
+        
+        print(f"median intinct actions {state_actions_instinct}")
+        print(f"median learned actions {state_actions_final}")
+        print(f"average learned score = {mean_score}")

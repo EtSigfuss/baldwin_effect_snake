@@ -31,9 +31,9 @@ output_size = len(ACTIONS)
 # GA hyperparams
 pop = 50
 generations = 45
-mutation_rate = 0.10
-mutation_scale = 0.10
+mutation_probability = 0.05
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
+num_parents_mating = int(pop*.30)
 
 #observation settings
 watch_mod = 0
@@ -135,8 +135,7 @@ if __name__ == "__main__":
     print()
     print("pop: ", pop)
     print("generations: ", generations)
-    print("mutation rate: ",mutation_rate)
-    print("mutation scale: ", mutation_scale)
+    print("mutation probability: ",mutation_probability)
     print("gene size: ",gene_size)
 
     # results = pd.DataFrame(columns=['run#', 'instinct score' ,'bald score'])
@@ -150,23 +149,23 @@ if __name__ == "__main__":
         ga_intinct = pygad.GA(num_generations=generations,
                 sol_per_pop= pop,
                 num_genes= gene_size,
-                num_parents_mating=5,
-                mutation_percent_genes= mutation_scale,
-                mutation_probability= mutation_rate,
+                num_parents_mating=num_parents_mating,
+                mutation_percent_genes= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_instinct,
-                parallel_processing=['process', 4] 
+                parallel_processing=['process', 4]
+                crossover_type="uniform"
                 )
 
         bald_ga = pygad.GA(num_generations=generations,
                 sol_per_pop= pop,
                 num_genes= gene_size,
-                num_parents_mating=5,
-                mutation_percent_genes= mutation_scale,
-                mutation_probability= mutation_rate,
+                num_parents_mating=num_parents_mating,
+                mutation_percent_genes= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_learning,
                 parallel_processing=['process', 4] 
+                crossover_type="uniform"
                 )
 
         ga_intinct.run()

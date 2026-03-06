@@ -1,6 +1,6 @@
 
 ACTIONS = [0, 1, 2]  # turn left, straight, turn right
-ACTION_STRING = ["left", "straight", "right"]
+ACTION_STRING = ["L", "S", "R"]
 
 DIRECTIONS = [0, 1, 2, 3]  # up, right, down, left
 
