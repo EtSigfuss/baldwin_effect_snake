@@ -153,7 +153,7 @@ if __name__ == "__main__":
                 mutation_percent_genes= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_instinct,
-                parallel_processing=['process', 4]
+                parallel_processing=['process', 4],
                 crossover_type="uniform"
                 )
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                 mutation_percent_genes= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_learning,
-                parallel_processing=['process', 4] 
+                parallel_processing=['process', 4],
                 crossover_type="uniform"
                 )
 
