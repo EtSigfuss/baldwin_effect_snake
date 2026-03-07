@@ -36,7 +36,7 @@ output_size = len(ACTIONS)
 # GA hyperparams
 pop = 50
 num_parents_mating = int(pop*.30)
-generations = 50
+generations = 2
 mutation_probability = 0.05
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
@@ -249,6 +249,6 @@ if __name__ == "__main__":
     
     results_df = pd.DataFrame(results)
     
-    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
     results_df.to_csv(f'baldwin_explore_results/results{ts}.csv', index=False, header=True)
