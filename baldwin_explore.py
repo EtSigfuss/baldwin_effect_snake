@@ -36,7 +36,7 @@ output_size = len(ACTIONS)
 # GA hyperparams
 pop = 50
 num_parents_mating = int(pop*.30)
-generations = 2
+generations = 40
 mutation_probability = 0.05
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
