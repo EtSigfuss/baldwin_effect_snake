@@ -35,9 +35,9 @@ output_size = len(ACTIONS)
 
 # GA hyperparams
 pop = 50
-num_parents_mating = int(pop*.30)
+num_parents_mating = int(pop*.15)
 generations = 40
-mutation_probability = 0.05
+mutation_probability = 0.10
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
 #observation settings
@@ -103,16 +103,16 @@ def extract_best_agent_from_gen(gen):
     best_gen_key = max(gen_data, key = lambda k: gen_data[k][0])
     return  gen_data[best_gen_key]
 
-def get_median_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
+def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
     """
-    gets the median actions for a game state
+    gets the mode actions for a game state
     """
     global starting_and_learned_weights_store
 
     #list of actions of all agents of a generation for a state
     agent_final_actions = []
     agent_instinct_actions = []
-    #iterate through all instinct and final agents of a generation and get the median actions
+    #iterate through all instinct and final agents of a generation and get the mode actions
     scores = []
     for score, final_agent, solution in starting_and_learned_weights_store[gen]:
 
@@ -128,11 +128,11 @@ def get_median_gen_learned_n_instinct_action(gen: int, state: dict[str, float]) 
         agent_instinct_actions.append(agent_instinct.get_action(featurize_state(state),False))
         scores.append(score)
         
-    instinct_median_action = statistics.median(agent_instinct_actions)
-    final_median_action = statistics.median(agent_final_actions)
+    instinct_mode_action = statistics.mode(agent_instinct_actions)
+    final_mode_action = statistics.mode(agent_final_actions)
     mean_score = statistics.mean(scores)
 
-    return mean_score, instinct_median_action, final_median_action
+    return mean_score, instinct_mode_action, final_mode_action
 
 
 
@@ -232,19 +232,19 @@ if __name__ == "__main__":
         state_actions_final = []
 
         for state in test_states:
-            mean_score, instinct_median_action, final_median_action =get_median_gen_learned_n_instinct_action(gen, state,)
-            state_actions_instinct.append(ACTION_STRING[int(instinct_median_action)])
-            state_actions_final.append(ACTION_STRING[int(final_median_action)])
+            mean_score, instinct_mode_action, final_mode_action =get_mode_gen_learned_n_instinct_action(gen, state,)
+            state_actions_instinct.append(ACTION_STRING[int(instinct_mode_action)])
+            state_actions_final.append(ACTION_STRING[int(final_mode_action)])
 
 
         results.append({
             'gen': gen,
-            'median intinct actions': state_actions_instinct,
-            'median learned actions':state_actions_final,
+            'mode intinct actions': state_actions_instinct,
+            'mode learned actions':state_actions_final,
             'average learned score': ("%.2f" %mean_score)
         })
-        print(f"median intinct actions {state_actions_instinct}")
-        print(f"median learned actions {state_actions_final}")
+        print(f"mode intinct actions {state_actions_instinct}")
+        print(f"mode learned actions {state_actions_final}")
         print(f"average learned score = {mean_score}")
     
     results_df = pd.DataFrame(results)

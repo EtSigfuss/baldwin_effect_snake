@@ -201,9 +201,14 @@ class Snake:
         
         #get current direction
         dir_x, dir_y = VELOCITY[self.direction]
-
-        #rotate vector
+        # 0 = UP, 1 = RIGHT, 2 = DOWN, 3 = LEFT
+        #VELOCITY = [(0,-1), (1,0), (0,1), (-1,0)]
+        
+        #rotate vector 90 degrees right
         right_x,right_y = -dir_y, dir_x
+        # so (0,-1) UP becomes 1,0 Right, Right beceoms down, and down becomes left
+
+        
         
         
         state = {}
@@ -214,14 +219,13 @@ class Snake:
             self._place_food()
         if self.food:
             fx, fy = self.food
-            dx, dy = fx - headx, fy - heady
 
-            v_fx, v_fy = fx-headx, fy-heady
+            distance_foodx = fx - headx
+            distance_foody = fy - heady
 
-            state["food_front/back_norm"] = (v_fx * dir_x + v_fy * dir_y) / max(self.height,self.width)
-            state["food_left/right_norm"] = (v_fx*right_x + v_fy * right_y) /max(self.height,self.width)
+            state["food_front/back_norm"] = (distance_foodx * dir_x + distance_foody * dir_y) / max(self.height,self.width)
+            state["food_left/right_norm"] = (distance_foodx * right_x + distance_foody * right_y) /max(self.height,self.width)
 
-        # Direction
         # Sensory: walls/body -> obstacle flags
         rel_dirs = {
             "obstacle_front": (dir_x, dir_y),
