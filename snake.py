@@ -55,20 +55,17 @@ class Snake:
             random.seed(seed)
             np.random.seed(seed)
 
-        # environment state
         self.snake = deque()
-        self.direction = 3  # start moving left
+        self.direction = 3  
         self.food = None
         self.steps = 0
         self.done = False
         self.score = 0
-        self.first_move = True  # safe first move flag
+        self.first_move = True
 
-        # Rendering
         if self.render_mode == 'pygame':
             self._init_renderer(cell_size=20)
 
-    # ---------- Helpers ----------
     def _inside(self, pos):
         x,y = pos
         return 0 <= x < self.width and 0 <= y < self.height
@@ -95,7 +92,6 @@ class Snake:
         self.direction = 3
         self.first_move = True
 
-    # ---------- Public API ----------
     def reset(self):
         self._init_snake()
         self._place_food()
@@ -106,6 +102,7 @@ class Snake:
         return self._get_state()
     
     def change_direction(self, action):
+        #changes direction
         if action == 0:
             self.direction = DIRECTIONS[self.direction-1]
         elif action == 2:
@@ -211,9 +208,10 @@ class Snake:
 
             distance_foodx = fx - headx
             distance_foody = fy - heady
-
-            state["food_front/back_norm"] = (distance_foodx * dir_x + distance_foody * dir_y) / max(self.height,self.width)
-            state["food_left/right_norm"] = (distance_foodx * right_x + distance_foody * right_y) /max(self.height,self.width)
+            
+            #getting the sign of direction, smaller state space for testing every solution
+            state["food_front/back_norm"] = np.sign((distance_foodx * dir_x + distance_foody * dir_y) / max(self.height,self.width))
+            state["food_left/right_norm"] = np.sign((distance_foodx * right_x + distance_foody * right_y) /max(self.height,self.width))
 
         # Sensory: walls/body -> obstacle flags
         rel_dirs = {

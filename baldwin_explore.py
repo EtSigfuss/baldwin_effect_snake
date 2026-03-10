@@ -1,3 +1,4 @@
+import itertools
 import os
 import warnings
 
@@ -36,14 +37,15 @@ output_size = len(ACTIONS)
 # GA hyperparams
 pop = 50
 num_parents_mating = int(pop*.15)
-generations = 40
+generations = 50
 mutation_probability = 0.10
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 
 #observation settings
 fitness_eval_count = 0
 generation_high_score = 0
-starting_and_learned_weights_store = defaultdict(list)
+starting_and_learned_weights_store_by_gen = defaultdict(list)
+starting_and_learned_weights_store_by_gen_and_indiv = {}
 
 
 
@@ -51,7 +53,9 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
     """
 
     """
-    global starting_and_learned_weights_store
+    global starting_and_learned_weights_store_by_gen
+    global starting_and_learned_weights_store_by_gen_and_indiv
+
     current_gen = ga_instance.generations_completed
 
 
@@ -92,14 +96,20 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
 
     #capture all agents and starting weights in a gen index dict 
 
-    starting_and_learned_weights_store[current_gen].append((score,agent,solution))
-        
+    starting_and_learned_weights_store_by_gen[current_gen].append((score,agent,solution))
+    starting_and_learned_weights_store_by_gen_and_indiv[(current_gen, solution_idx)] = (score, agent, solution)
     
 
     return total_score
 
 def extract_best_agent_from_gen(gen):
-    gen_data = {k: v for k, v in starting_and_learned_weights_store.items() if k[0] == gen}
+    """
+    finds the best performing individual in a population returns the score, trained agent and solution
+    """
+    #filter for only specified gen
+    gen_data = {k: v for k, v in starting_and_learned_weights_store_by_gen_and_indiv.items() if k[0] == gen}
+    
+    #find where score is hightst
     best_gen_key = max(gen_data, key = lambda k: gen_data[k][0])
     return  gen_data[best_gen_key]
 
@@ -107,14 +117,14 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
     """
     gets the mode actions for a game state
     """
-    global starting_and_learned_weights_store
+    global starting_and_learned_weights_store_by_gen
 
     #list of actions of all agents of a generation for a state
     agent_final_actions = []
     agent_instinct_actions = []
     #iterate through all instinct and final agents of a generation and get the mode actions
     scores = []
-    for score, final_agent, solution in starting_and_learned_weights_store[gen]:
+    for score, final_agent, solution in starting_and_learned_weights_store_by_gen[gen]:
 
         agent_instinct = Agent(solution=solution,
                         input_size=input_size,
@@ -134,6 +144,91 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
 
     return mean_score, instinct_mode_action, final_mode_action
 
+
+def mode_actions_of_generations_actions(test_states):
+    """gets actions of mode agents learned behavior and instincs across test states"""
+
+    for gen in range(generations):
+        print(f"Generation {gen}")
+        state_actions_instinct = []
+        state_actions_final = []
+
+        for state in test_states:
+            # mean_score, instinct_mode_action, final_mode_action =get_mode_gen_learned_n_instinct_action(gen, state,)
+            mean_score, instinct_mode_action, final_mode_action = get_mode_gen_learned_n_instinct_action(gen,state)
+            state_actions_instinct.append(ACTION_STRING[int(instinct_mode_action)])
+            state_actions_final.append(ACTION_STRING[int(final_mode_action)])
+
+
+        results.append({
+            'gen': gen,
+            'mode intinct actions': state_actions_instinct,
+            'mode learned actions':state_actions_final,
+            'average learned score': ("%.2f" %mean_score)
+        })
+        # print(f"mode intinct actions {state_actions_instinct}")
+        # print(f"mode learned actions {state_actions_final}")
+        # print(f"average learned score = {mean_score}")
+    
+    results_df = pd.DataFrame(results)
+    
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+
+    results_df.to_csv(f'baldwin_explore_results/results_mode_{ts}.csv', index=False, header=True)
+
+def elite_actions_of_generations(test_states): 
+    """gets actions of best agents learned behavior and instincs across test states"""
+    results = []
+    for gen in range(generations):
+    
+        # get best agent
+        best_score, best_final_agent, best_solution = extract_best_agent_from_gen(gen)
+
+        #starting version of Agent
+        best_instinct_agent = Agent(
+            solution=best_solution,
+            input_size=input_size,
+            hidden_size=hidden_size,
+            output_size=output_size
+        )
+
+        best_actions_instinct = []
+        best_actions_final = []
+
+        for state in test_states:
+            feat_state = featurize_state(state)
+            
+            instinct_act = best_instinct_agent.get_action(feat_state, False)
+            final_act = best_final_agent.get_action(feat_state, False)
+
+            best_actions_instinct.append(ACTION_STRING[int(instinct_act)])
+            best_actions_final.append(ACTION_STRING[int(final_act)])
+        results.append({
+            'gen': gen,
+            'best instinct actions': best_actions_instinct,
+            'best learned actions': best_actions_final,
+            'best agent score': ("%.2f" % best_score)
+        })
+
+    results_df = pd.DataFrame(results)
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    results_df.to_csv(f'baldwin_explore_results/results_best_{ts}.csv', index=False)
+
+def get_every_state():
+    """generates every permutaion in a 5 long array of pos 0-1 being trinary and 2-4being binary"""
+    pos_0_1 = [-1, 0, 1]
+    pos_2_4 = [0, 1]
+    all_states = list(itertools.product(pos_0_1, pos_0_1, pos_2_4, pos_2_4, pos_2_4))
+    all_states_dict_array = []
+    for state in all_states:
+        all_states_dict_array.append({
+            "food_front/back_norm": state[0],
+            "food_right/left_norm": state[1],
+            "obstacle_front": state[2],
+            "obstacle_right": state[3],
+            "obstacle_left": state[4],
+        })
+    return all_states_dict_array
 
 
 if __name__ == "__main__":
@@ -165,7 +260,7 @@ if __name__ == "__main__":
                 mutation_type='random',
                 fitness_func=fitness_func_learning,
                 # parallel_processing=['process', 4]
-                crossover_type="uniform"
+                crossover_type="uniform",
                 )
 
     bald_total = 0
@@ -222,34 +317,10 @@ if __name__ == "__main__":
         "obstacle_right": 0.0, 
         "obstacle_left": 1.0
     }
-]       
+]
     for state in test_states:
         print(state)
 
-
-    for gen in range(generations):
-        print(f"Generation {gen}")
-        state_actions_instinct = []
-        state_actions_final = []
-
-        for state in test_states:
-            mean_score, instinct_mode_action, final_mode_action =get_mode_gen_learned_n_instinct_action(gen, state,)
-            state_actions_instinct.append(ACTION_STRING[int(instinct_mode_action)])
-            state_actions_final.append(ACTION_STRING[int(final_mode_action)])
-
-
-        results.append({
-            'gen': gen,
-            'mode intinct actions': state_actions_instinct,
-            'mode learned actions':state_actions_final,
-            'average learned score': ("%.2f" %mean_score)
-        })
-        print(f"mode intinct actions {state_actions_instinct}")
-        print(f"mode learned actions {state_actions_final}")
-        print(f"average learned score = {mean_score}")
-    
-    results_df = pd.DataFrame(results)
-    
-    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
-
-    results_df.to_csv(f'baldwin_explore_results/results{ts}.csv', index=False, header=True)
+    all_states = get_every_state()
+    mode_actions_of_generations_actions(all_states)
+    elite_actions_of_generations(all_states)
