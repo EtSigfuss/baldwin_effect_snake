@@ -173,18 +173,7 @@ class Snake:
         return self._get_state(), reward, self.done, {"ate": ate}
 
     def render(self, scale=20, epsilon = None):
-        if self.render_mode != 'pygame':
-            # simple ASCII render if pygame not available
-            grid = [['.' for _ in range(self.width)] for __ in range(self.height)]
-            for (x,y) in self.snake:
-                grid[y][x] = 'S'
-            if self.food:
-                fx,fy = self.food
-                grid[fy][fx] = 'F'
-            print('\n'.join(''.join(row) for row in grid))
-            print(f"Score: {self.score} Steps: {self.steps}")
-            return
-
+        
         # pygame render
         if not PYGAME_AVAILABLE:
             return

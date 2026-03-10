@@ -31,7 +31,7 @@ output_size = len(ACTIONS)
 # GA hyperparams
 pop = 50
 generations = 45
-mutation_probability = 0.05
+mutation_probability = 0.10
 gene_size = input_size*hidden_size + hidden_size + hidden_size*output_size + output_size
 num_parents_mating = int(pop*.30)
 
@@ -39,7 +39,7 @@ num_parents_mating = int(pop*.30)
 watch_mod = 0
 
 #trial and arch runs
-arch_runs = 10
+arch_runs = 1
 trial_amt = 10
 
 def fitness_func_learning(ga_instance, solution, solution_idx):
@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 sol_per_pop= pop,
                 num_genes= gene_size,
                 num_parents_mating=num_parents_mating,
-                mutation_percent_genes= mutation_probability,
+                mutation_probability= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_instinct,
                 parallel_processing=['process', 4],
@@ -161,7 +161,7 @@ if __name__ == "__main__":
                 sol_per_pop= pop,
                 num_genes= gene_size,
                 num_parents_mating=num_parents_mating,
-                mutation_percent_genes= mutation_probability,
+                mutation_probability= mutation_probability,
                 mutation_type='random',
                 fitness_func=fitness_func_learning,
                 parallel_processing=['process', 4],

@@ -155,7 +155,8 @@ if __name__ == "__main__":
     print("gene size: ",gene_size)
 
 
-    bald_ga = pygad.GA(num_generations=generations,
+    bald_ga = pygad.GA(
+                num_generations=generations,
                 sol_per_pop= pop,
                 num_genes= gene_size,
                 keep_elitism=3,
