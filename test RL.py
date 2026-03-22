@@ -39,7 +39,6 @@ env = Snake(
         width=width,
         height=height,
         lifespan=lifespan,
-        state_includes_location=False,
         state_includes_sensory=True,
         render_mode="pygame",
         seed=int(rng.integers(1,1000000)),
