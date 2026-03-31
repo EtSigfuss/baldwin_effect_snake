@@ -55,8 +55,8 @@ class ReplayBuffer:
     def push(self, state, action, reward, next_state, done):
         self.buffer.append((state, action, reward, next_state, done))
 
-    def sample (self, bach_size):
-        return random.sample(self.buffer, min(len(self.buffer), bach_size))
+    def sample (self, batch_size):
+        return random.sample(self.buffer, min(len(self.buffer), batch_size))
     
     def __len__(self):
         return len(self.buffer)
@@ -138,7 +138,8 @@ class Agent:
 
         #predicted move
         else:
-            state_tensor = torch.tensor(state, dtype=torch.float)
+            state_data = list(state.values()) if isinstance(state, dict) else state
+            state_tensor = torch.tensor(state_data, dtype=torch.float)
             prediction = self.model(state_tensor)
             move = torch.argmax(prediction).item()
 
