@@ -195,8 +195,8 @@ def mode_actions_of_generations(test_states, ts = None):
     for gen in range(generations):
         
         
-        instinct_row = {'gen': gen, 'best_score': 0.0}
-        learned_row = {'gen': gen, 'best_score': 0.0}
+        instinct_row = {'gen': gen, 'avg_score': 0.0}
+        learned_row = {'gen': gen, 'avg_score': 0.0}
         current_gen_avg_score = 0
 
 

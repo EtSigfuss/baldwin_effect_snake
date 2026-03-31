@@ -122,7 +122,7 @@ class Agent:
         self.model = Linear_Q(solution=solution, input_size=input_size,hidden_size=hidden_size, output_size=output_size)
         self.trainer = QTrainer(self.model, lr=0.001, gamma=self.gamma)
         self.memory = ReplayBuffer(max_size = 100_000)
-        self.batch_size = 10
+        self.batch_size = 100
 
 
     def get_action(self, state, use_epsilon = True):
