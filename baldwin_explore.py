@@ -184,7 +184,7 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
     return mean_score, instinct_mode_action, learned_mode_action
 
 
-def mode_actions_of_generations_actions(test_states, ts = None):
+def mode_actions_of_generations(test_states, ts = None):
     """gets actions of mode agents learned behavior and instincs across test states"""
     if ts is None:
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -195,8 +195,8 @@ def mode_actions_of_generations_actions(test_states, ts = None):
     for gen in range(generations):
         
         
-        instinct_row = {'gen': gen}
-        learned_row = {'gen': gen}
+        instinct_row = {'gen': gen, 'best_score': 0.0}
+        learned_row = {'gen': gen, 'best_score': 0.0}
         current_gen_avg_score = 0
 
 
@@ -432,5 +432,5 @@ if __name__ == "__main__":
 
 
     all_states = get_every_state()
-    mode_actions_of_generations_actions(all_states, ts)
+    mode_actions_of_generations(all_states, ts)
     elite_actions_of_generations(all_states, ts)
