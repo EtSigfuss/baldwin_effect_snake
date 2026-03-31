@@ -35,7 +35,7 @@ lifespan = 1000
 #NN params
 episodes_per_life = 10
 input_size = len(SNAKE_FEATURE_COLS)
-hidden_size = 2**3
+hidden_size = 2**4
 output_size = len(ACTIONS)
 
 # GA hyperparams
