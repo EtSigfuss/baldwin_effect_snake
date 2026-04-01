@@ -35,7 +35,7 @@ lifespan = 1000
 #NN params
 episodes_per_life = 10
 input_size = len(SNAKE_FEATURE_COLS)
-hidden_size = 2**3
+hidden_size = 2**4
 output_size = len(ACTIONS)
 
 # GA hyperparams
@@ -184,7 +184,7 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
     return mean_score, instinct_mode_action, learned_mode_action
 
 
-def mode_actions_of_generations_actions(test_states, ts = None):
+def mode_actions_of_generations(test_states, ts = None):
     """gets actions of mode agents learned behavior and instincs across test states"""
     if ts is None:
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -195,8 +195,8 @@ def mode_actions_of_generations_actions(test_states, ts = None):
     for gen in range(generations):
         
         
-        instinct_row = {'gen': gen}
-        learned_row = {'gen': gen}
+        instinct_row = {'gen': gen, 'avg_score': 0.0}
+        learned_row = {'gen': gen, 'avg_score': 0.0}
         current_gen_avg_score = 0
 
 
@@ -223,8 +223,8 @@ def mode_actions_of_generations_actions(test_states, ts = None):
 
 
 
-    results_instinct_df.to_csv(f'baldwin_explore_results/mode_instinct_{ts}.csv', index=False)
-    results_learned_df.to_csv(f'baldwin_explore_results/mode_learned_{ts}.csv', index=False)
+    results_instinct_df.to_csv(f'baldwin_explore_results/csv/mode/mode_instinct_{ts}.csv', index=False)
+    results_learned_df.to_csv(f'baldwin_explore_results/csv/mode/mode_learned_{ts}.csv', index=False)
 
     states_only_i = results_instinct_df.drop(columns=['gen', 'avg_score'])
     states_only_l = results_learned_df.drop(columns=['gen', 'avg_score'])
@@ -245,7 +245,7 @@ def mode_actions_of_generations_actions(test_states, ts = None):
 
     plt.tight_layout()
     plt.xticks(rotation=45, ha='right', fontsize=8)
-    plt.savefig(f"baldwin_explore_results/mode_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"baldwin_explore_results/matchmaps/mode_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
     # plt.show()
     plt.close()
 
@@ -265,7 +265,7 @@ def mode_actions_of_generations_actions(test_states, ts = None):
 
 
     plt.tight_layout()
-    plt.savefig(f"baldwin_explore_results/agreement_trend_mode_{ts}.png", dpi=300)
+    plt.savefig(f"baldwin_explore_results/agreement_trends/agreement_trend_mode_{ts}.png", dpi=300)
     # plt.show()
     plt.close()
 
@@ -315,8 +315,8 @@ def elite_actions_of_generations(test_states, ts = None):
     results_learned_df = pd.DataFrame(results_learned)
 
 
-    results_instinct_df.to_csv(f'baldwin_explore_results/results_best_instinct_{ts}.csv', index=False)
-    results_learned_df.to_csv(f'baldwin_explore_results/results_best_learned_{ts}.csv', index=False)
+    results_instinct_df.to_csv(f'baldwin_explore_results/csv/best_agent/results_best_instinct_{ts}.csv', index=False)
+    results_learned_df.to_csv(f'baldwin_explore_results/csv/best_agent/results_best_learned_{ts}.csv', index=False)
 
     #plot heatmap
     #-----------------------------------------------------------------------
@@ -339,7 +339,7 @@ def elite_actions_of_generations(test_states, ts = None):
 
     plt.tight_layout()
     plt.xticks(rotation=45, ha='right', fontsize=8)
-    plt.savefig(f"baldwin_explore_results/best_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"baldwin_explore_results/matchmaps/best_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
 
     # plt.show()
     plt.close()
@@ -360,7 +360,7 @@ def elite_actions_of_generations(test_states, ts = None):
 
 
     plt.tight_layout()
-    plt.savefig(f"baldwin_explore_results/agreement_trend_best_{ts}.png", dpi=300)
+    plt.savefig(f"baldwin_explore_results/agreement_trends/agreement_trend_best_{ts}.png", dpi=300)
     # plt.show()
     plt.close()
 
@@ -432,5 +432,5 @@ if __name__ == "__main__":
 
 
     all_states = get_every_state()
-    mode_actions_of_generations_actions(all_states, ts)
+    mode_actions_of_generations(all_states, ts)
     elite_actions_of_generations(all_states, ts)
