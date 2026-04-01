@@ -43,7 +43,7 @@ class QTrainer:
 
 
 class Linear_Q(nn.Module):
-    def __init__(self, input_size = len(SNAKE_FEATURE_COLS), hidden_size=2^4, output_size=4, solution = None):
+    def __init__(self, input_size = len(SNAKE_FEATURE_COLS), hidden_size=2**4, output_size=4, solution = None):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
