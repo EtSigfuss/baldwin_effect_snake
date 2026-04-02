@@ -105,7 +105,7 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
                   input_size=input_size,
                   hidden_size=hidden_size,
                   output_size = output_size,
-                  decay_actions= 100,
+                  decay_actions= 200,
                   )
 
     total_score = 0
@@ -261,7 +261,7 @@ def mode_actions_of_generations(test_states, ts = None):
     plt.xlabel("Generation", fontsize=12)
     plt.ylabel("Agreement Percentage (%)", fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.6)
-    plt.ylim(0, 105)  
+    plt.ylim(0, 105)
 
 
     plt.tight_layout()
