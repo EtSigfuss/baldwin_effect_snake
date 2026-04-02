@@ -209,8 +209,8 @@ def mode_actions_of_generations(test_states, ts = None):
 
             current_gen_avg_score = mean_score
 
-        instinct_row['avg_score'] = float(current_gen_avg_score)
-        learned_row['avg_score'] = float(current_gen_avg_score)
+        instinct_row['avg_score'] = f"{current_gen_avg_score:.2f}"
+        learned_row['avg_score'] = f"{current_gen_avg_score:.2f}"
 
         results_instinct.append(instinct_row)
         results_learned.append(learned_row)
