@@ -195,8 +195,8 @@ if __name__ == "__main__":
                 height=height,
                 lifespan=lifespan,
                 state_includes_sensory=True,
-                render_mode="pygame",
-                # render_mode = None,
+                # render_mode="pygame",
+                render_mode = None,
                 seed=seed_value,
                 frame_rate=60
                 )
