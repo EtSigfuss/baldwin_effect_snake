@@ -64,7 +64,7 @@ class Linear_Q(nn.Module):
         """unfolds chromosome into lists of neron weights by actions"""
         n_features = len(SNAKE_FEATURE_COLS)
 
-        solution_tensor = torch.tensor(solution, dtype=float)
+        solution_tensor = torch.tensor(solution, dtype=torch.float32)
 
         hidden_weights_end = n_features*self.hidden_size
         hidden_weights_tensor = solution_tensor[ :hidden_weights_end].view(self.hidden_size,n_features)
@@ -82,7 +82,7 @@ class Linear_Q(nn.Module):
             self.linear1.weight.copy_(hidden_weights_tensor)
             self.linear1.bias.copy_(hidden_bias_tensor)
             self.linear2.weight.copy_(output_weights_tensor)
-            self.linear2.bias.copy_(output_bias_end)
+            self.linear2.bias.copy_(output_bias_tensor)
 
 
 
@@ -105,11 +105,12 @@ class Agent:
 
     def get_action(self, state, use_epsilon = True):
         #for purely evaluating the learned weights
-        if not use_epsilon:
-            self.epsilon = 0
+        
         # Update epsilon based on game count
         self.epsilon = max(self.min_epsilon, self.epsilon * self.decay_rate)
         
+        if not use_epsilon:
+            self.epsilon = 0
         #random move
         if random.random() < self.epsilon:
             move = random.randint(0,len(ACTIONS)-1)

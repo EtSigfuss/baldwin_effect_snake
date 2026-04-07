@@ -18,6 +18,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pygad
+import torch
 
 from agent_interface import featurize_state, run_episode
 from constants import ACTION_STRING, ACTIONS, SNAKE_FEATURE_COLS
@@ -33,7 +34,7 @@ width = 10
 lifespan = 1000
 
 #NN params
-episodes_per_life = 10
+episodes_per_life = 6
 input_size = len(SNAKE_FEATURE_COLS)
 hidden_size = 2**4
 output_size = len(ACTIONS)
@@ -51,12 +52,9 @@ generation_high_score = 0
 starting_and_learned_weights_store_by_gen = defaultdict(list)
 starting_and_learned_weights_store_by_gen_and_indiv = {}
 
-def log_params(ts = None):
-    if ts is None:
-        ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+def log_params(ts, run_dir):
 
-    log_path = f'baldwin_explore_results/params_{ts}.json'
-
+    log_path = f'{run_dir}/params_{ts}.json'
     params = {
         "timestamp": ts,
         "environment": {
@@ -102,11 +100,11 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
 
 
     agent = Agent(solution=solution,
-                  input_size=input_size,
-                  hidden_size=hidden_size,
-                  output_size = output_size,
-                  decay_actions= 100,
-                  )
+                    input_size=input_size,
+                    hidden_size=hidden_size,
+                    output_size = output_size,
+                    decay_actions= 100,
+                    )
 
     total_score = 0
 
@@ -119,7 +117,7 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
         seed=int(rng.integers(1,1000000)),
         frame_rate=60
         )
-    for ep in range(episodes_per_life):
+    for episode in range(episodes_per_life):
         score = run_episode(env=env,
                                 learn=True,
                                 render=render_life,
@@ -127,7 +125,7 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
                                 )
         
         ## to minimize random action effect
-        if ep > episodes_per_life/2:
+        if episode > episodes_per_life/2:
             total_score += score
         env.reset()
     env.close()
@@ -135,8 +133,8 @@ def fitness_func_learning(ga_instance, solution, solution_idx):
 
     #capture all agents and starting weights in a gen index dict 
 
-    starting_and_learned_weights_store_by_gen[current_gen].append((score,agent,solution))
-    starting_and_learned_weights_store_by_gen_and_indiv[(current_gen, solution_idx)] = (score, agent, solution)
+    starting_and_learned_weights_store_by_gen[current_gen].append((score,agent,solution.copy()))
+    starting_and_learned_weights_store_by_gen_and_indiv[(current_gen, solution_idx)] = (score, agent, solution.copy())
     
 
     return total_score
@@ -169,12 +167,15 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
                         input_size=input_size,
                         hidden_size=hidden_size,
                         output_size = output_size,
+
                         )
         
         
         
-        agent_learned_actions.append(learned_agent.get_action(featurize_state(state),False))
-        agent_instinct_actions.append(agent_instinct.get_action(featurize_state(state),False))
+        
+        
+        agent_instinct_actions.append(agent_instinct.get_action(featurize_state(state),use_epsilon= False))
+        agent_learned_actions.append(learned_agent.get_action(featurize_state(state),use_epsilon= False))
         scores.append(score)
         
     instinct_mode_action = statistics.mode(agent_instinct_actions)
@@ -184,7 +185,7 @@ def get_mode_gen_learned_n_instinct_action(gen: int, state: dict[str, float])  :
     return mean_score, instinct_mode_action, learned_mode_action
 
 
-def mode_actions_of_generations(test_states, ts = None):
+def mode_actions_of_generations(test_states, ts, run_dir):
     """gets actions of mode agents learned behavior and instincs across test states"""
     if ts is None:
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -223,8 +224,8 @@ def mode_actions_of_generations(test_states, ts = None):
 
 
 
-    results_instinct_df.to_csv(f'baldwin_explore_results/csv/mode/mode_instinct_{ts}.csv', index=False)
-    results_learned_df.to_csv(f'baldwin_explore_results/csv/mode/mode_learned_{ts}.csv', index=False)
+    results_instinct_df.to_csv(f'{run_dir}/mode_instinct_{ts}.csv', index=False)
+    results_learned_df.to_csv(f'{run_dir}/mode_learned_{ts}.csv', index=False)
 
     states_only_i = results_instinct_df.drop(columns=['gen', 'avg_score'])
     states_only_l = results_learned_df.drop(columns=['gen', 'avg_score'])
@@ -245,7 +246,7 @@ def mode_actions_of_generations(test_states, ts = None):
 
     plt.tight_layout()
     plt.xticks(rotation=45, ha='right', fontsize=8)
-    plt.savefig(f"baldwin_explore_results/matchmaps/mode_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{run_dir}/mode_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
     # plt.show()
     plt.close()
 
@@ -265,11 +266,14 @@ def mode_actions_of_generations(test_states, ts = None):
 
 
     plt.tight_layout()
-    plt.savefig(f"baldwin_explore_results/agreement_trends/agreement_trend_mode_{ts}.png", dpi=300)
+    plt.savefig(f"{run_dir}/agreement_trend_mode_{ts}.png", dpi=300)
     # plt.show()
     plt.close()
 
-def elite_actions_of_generations(test_states, ts = None): 
+    find_assimilation_events(results_instinct_df, results_learned_df, run_dir, ts)
+
+
+def elite_actions_of_generations(test_states, ts, run_dir):
     """gets actions of best agents learned behavior and instincs across test states"""
     results_instinct = []
     results_learned = []
@@ -315,15 +319,15 @@ def elite_actions_of_generations(test_states, ts = None):
     results_learned_df = pd.DataFrame(results_learned)
 
 
-    results_instinct_df.to_csv(f'baldwin_explore_results/csv/best_agent/results_best_instinct_{ts}.csv', index=False)
-    results_learned_df.to_csv(f'baldwin_explore_results/csv/best_agent/results_best_learned_{ts}.csv', index=False)
+    results_instinct_df.to_csv(f'{run_dir}/results_best_instinct_{ts}.csv', index=False)
+    results_learned_df.to_csv(f'{run_dir}/results_best_learned_{ts}.csv', index=False)
 
     #plot heatmap
     #-----------------------------------------------------------------------
     states_only_instinct = results_instinct_df.drop(columns=['gen', 'best_score'])
     states_only_learned = results_learned_df.drop(columns=['gen', 'best_score'])
 
-    assimilation_map = (results_instinct_df == results_learned_df).astype(int)
+    assimilation_map = (states_only_instinct == states_only_learned).astype(int)
 
 
     plt.figure(figsize=(16, 8))
@@ -339,7 +343,7 @@ def elite_actions_of_generations(test_states, ts = None):
 
     plt.tight_layout()
     plt.xticks(rotation=45, ha='right', fontsize=8)
-    plt.savefig(f"baldwin_explore_results/matchmaps/best_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{run_dir}/best_learn_inst_match_map_{ts}.png", dpi=300, bbox_inches='tight')
 
     # plt.show()
     plt.close()
@@ -360,7 +364,7 @@ def elite_actions_of_generations(test_states, ts = None):
 
 
     plt.tight_layout()
-    plt.savefig(f"baldwin_explore_results/agreement_trends/agreement_trend_best_{ts}.png", dpi=300)
+    plt.savefig(f"{run_dir}/agreement_trend_best_{ts}.png", dpi=300)
     # plt.show()
     plt.close()
 
@@ -382,6 +386,58 @@ def get_every_state():
     return all_states_dict_array
 
 
+STABLE_RUN = 2
+
+def find_assimilation_events(inst_df, learn_df, run_dir, ts):
+    """
+    finds every state where learned held a novel action before instinct adopted it
+
+    """
+    state_cols = [c for c in inst_df.columns if c not in ("gen", "avg_score", "best_score")]
+    instinct_states  = inst_df[state_cols].values
+    learned_states = learn_df[state_cols].values
+    n_gens, n_states = instinct_states.shape
+
+    events = []
+    for state_index in range(n_states):
+        instinct_sequence  = instinct_states[:, state_index]
+        learned_sequence = learned_states[:, state_index]
+        generation = 0
+        while generation < n_gens:
+            held_learned_action = learned_sequence[generation]
+            run = 1
+            while generation + run < n_gens and learned_sequence[generation + run] == held_learned_action:
+                run += 1
+            if held_learned_action != instinct_sequence[generation] and run >= STABLE_RUN:
+                for generation2 in range(generation + 1, n_gens):
+                    if instinct_sequence[generation2] == held_learned_action and instinct_sequence[generation2] != instinct_sequence[generation2 - 1]:
+                        fixed = bool(np.all(instinct_sequence[generation2:] == held_learned_action))
+                        events.append({
+                            "state": state_index, "novel": held_learned_action,
+                            "learn_stable_from": generation,
+                            "inst_adopted_at": generation2,
+                            "lag": generation2 - generation,
+                            "fixed": fixed,
+                        })
+                        break
+            generation += run if learned_sequence[generation] != instinct_sequence[generation] else 1
+
+    seen, unique = set(), []
+    for event in sorted(events, key=lambda x: x["inst_adopted_at"]):
+        key = (event["state"], event["novel"])
+        if key not in seen:
+            seen.add(key)
+            unique.append(event)
+
+
+    events_df = pd.DataFrame(unique) if unique else pd.DataFrame(
+        columns=["state", "novel", "learn_stable_from", "inst_adopted_at", "lag", "fixed"])
+
+    out_path = f"{run_dir}/assimilation_events_{ts}.csv"
+    events_df.to_csv(out_path, index=False)
+
+    return events_df
+
 if __name__ == "__main__":
     results = []
 
@@ -401,7 +457,10 @@ if __name__ == "__main__":
     print("gene size: ",gene_size)
 
     ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    log_params(ts)
+    run_dir = f"baldwin_explore_results/{ts}"
+    os.makedirs(f"{run_dir}",       exist_ok=True)
+
+    log_params(ts, run_dir)
 
 
     bald_ga = pygad.GA(
@@ -432,5 +491,5 @@ if __name__ == "__main__":
 
 
     all_states = get_every_state()
-    mode_actions_of_generations(all_states, ts)
-    elite_actions_of_generations(all_states, ts)
+    mode_actions_of_generations(all_states, ts, run_dir)
+    elite_actions_of_generations(all_states, ts, run_dir)
