@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-04-06_22-50",
+    "environment": {
+        "seed_value": 1234,
+        "height": 10,
+        "width": 10,
+        "lifespan": 1000
+    },
+    "neural_network": {
+        "episodes_per_life": 6,
+        "input_size": 5,
+        "hidden_size": 16,
+        "output_size": 3
+    },
+    "ga_hyperparams": {
+        "population": 50,
+        "num_parents_mating": 7,
+        "generations": 50,
+        "mutation_probability": 0.13,
+        "gene_size": 147
+    }
+}
