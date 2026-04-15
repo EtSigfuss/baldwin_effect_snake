@@ -111,7 +111,7 @@ class Snake:
 
     def step(self, action):
         """
-        action: integer 0..3 mapping to up/right/down/left
+        action: integer mapping to action choice
         returns: state(dict), reward(float), done(bool), info(dict)
         """
         self.hunger -= 1
@@ -123,9 +123,7 @@ class Snake:
             self.done = True
             return self._get_state(), reward, self.done, {"reason":"starved :("}
 
-        # # prevent direct reversal
-        # if abs(action - self.direction) == 2:
-        #     action = self.direction  # ignore reverse
+
         self.change_direction(action)
         dx, dy = VELOCITY[self.direction]
         headx, heady = self.snake[0]
@@ -199,7 +197,7 @@ class Snake:
         
         state = {}
 
-        # Food direction & normalized distance
+        # food direction & normalized distance
         state["food_front/back_norm"] = state["food_left/right_norm"] = 0.0
         if self.food is None:
             self._place_food()
@@ -213,7 +211,7 @@ class Snake:
             state["food_front/back_norm"] = np.sign((distance_foodx * dir_x + distance_foody * dir_y) / max(self.height,self.width))
             state["food_left/right_norm"] = np.sign((distance_foodx * right_x + distance_foody * right_y) /max(self.height,self.width))
 
-        # Sensory: walls/body -> obstacle flags
+        # sensory: walls/body -> obstacle flags
         rel_dirs = {
             "obstacle_front": (dir_x, dir_y),
             "obstacle_right": (right_x, right_y),
