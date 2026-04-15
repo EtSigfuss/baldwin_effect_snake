@@ -172,21 +172,21 @@ for state_id, row in state_consistency.iterrows():
 sensor_df = pd.DataFrame(sensor_data)
 
 sensory_analysis = {
-    "food ahead (1)":    sensor_df[sensor_df['food_fb'] == 1]['fixation_rate'].mean(),
-    "food inline horiz (0)": sensor_df[sensor_df['food_fb'] == 0]['fixation_rate'].mean(),
-    "food behind (-1)":  sensor_df[sensor_df['food_fb'] == -1]['fixation_rate'].mean(),
+    "food ahead":    sensor_df[sensor_df['food_fb'] == 1]['fixation_rate'].mean(),
+    "food in line horizontal": sensor_df[sensor_df['food_fb'] == 0]['fixation_rate'].mean(),
+    "food behind":  sensor_df[sensor_df['food_fb'] == -1]['fixation_rate'].mean(),
     
-    "food right (1)":    sensor_df[sensor_df['food_rl'] == 1]['fixation_rate'].mean(),
-    "food in line (0)":sensor_df[sensor_df['food_rl'] == 0]['fixation_rate'].mean(),
-    "food left (-1)":   sensor_df[sensor_df['food_rl'] == -1]['fixation_rate'].mean(),
+    "food right":    sensor_df[sensor_df['food_rl'] == 1]['fixation_rate'].mean(),
+    "food in line vertical":sensor_df[sensor_df['food_rl'] == 0]['fixation_rate'].mean(),
+    "food left":   sensor_df[sensor_df['food_rl'] == -1]['fixation_rate'].mean(),
     
-    "wall front (1)":    sensor_df[sensor_df['obs_f'] == 1]['fixation_rate'].mean(),
-    "wall right (1)":sensor_df[sensor_df['obs_r'] == 1]['fixation_rate'].mean(),
-    "wall left (1)":sensor_df[sensor_df['obs_l'] == 1]['fixation_rate'].mean(),
+    "wall front":    sensor_df[sensor_df['obs_f'] == 1]['fixation_rate'].mean(),
+    "wall right":sensor_df[sensor_df['obs_r'] == 1]['fixation_rate'].mean(),
+    "wall left":sensor_df[sensor_df['obs_l'] == 1]['fixation_rate'].mean(),
 
-    "no wall front (0)":    sensor_df[sensor_df['obs_f'] == 0]['fixation_rate'].mean(),
-    "no wall right (0)":sensor_df[sensor_df['obs_r'] == 0]['fixation_rate'].mean(),
-    "no wall left (0)":sensor_df[sensor_df['obs_l'] == 0]['fixation_rate'].mean(),
+    "no wall front":    sensor_df[sensor_df['obs_f'] == 0]['fixation_rate'].mean(),
+    "no wall right":sensor_df[sensor_df['obs_r'] == 0]['fixation_rate'].mean(),
+    "no wall left":sensor_df[sensor_df['obs_l'] == 0]['fixation_rate'].mean(),
 }
 
 sensory_series = pd.Series(sensory_analysis).sort_values()
