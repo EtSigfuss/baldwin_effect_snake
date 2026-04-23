@@ -18,8 +18,8 @@ def lookup_state(state_id):
         "obs_l":   s["obstacle_left"]
     }
 
-# base_dir = "./baldwin_explore_results"
-base_dir = "./2 batch res"
+base_dir = "./baldwin_explore_results"
+# base_dir = "./2 batch res"
 
 
 # find all assimilation files in any sub-folder
