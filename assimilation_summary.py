@@ -18,7 +18,9 @@ def lookup_state(state_id):
         "obs_l":   s["obstacle_left"]
     }
 
-base_dir = "./baldwin_explore_results"
+# base_dir = "./baldwin_explore_results"
+base_dir = "./2 batch res"
+
 
 # find all assimilation files in any sub-folder
 path_pattern = os.path.join(base_dir, "**/assimilation_events_*.csv")
@@ -173,27 +175,27 @@ sensor_df = pd.DataFrame(sensor_data)
 
 sensory_analysis = {
     "food ahead":    sensor_df[sensor_df['food_fb'] == 1]['fixation_rate'].mean(),
-    "food in line horizontal": sensor_df[sensor_df['food_fb'] == 0]['fixation_rate'].mean(),
+    "food in line horiz": sensor_df[sensor_df['food_fb'] == 0]['fixation_rate'].mean(),
     "food behind":  sensor_df[sensor_df['food_fb'] == -1]['fixation_rate'].mean(),
     
     "food right":    sensor_df[sensor_df['food_rl'] == 1]['fixation_rate'].mean(),
-    "food in line vertical":sensor_df[sensor_df['food_rl'] == 0]['fixation_rate'].mean(),
+    "food in line vert":sensor_df[sensor_df['food_rl'] == 0]['fixation_rate'].mean(),
     "food left":   sensor_df[sensor_df['food_rl'] == -1]['fixation_rate'].mean(),
     
-    "wall front":    sensor_df[sensor_df['obs_f'] == 1]['fixation_rate'].mean(),
-    "wall right":sensor_df[sensor_df['obs_r'] == 1]['fixation_rate'].mean(),
-    "wall left":sensor_df[sensor_df['obs_l'] == 1]['fixation_rate'].mean(),
+    "obstical front":    sensor_df[sensor_df['obs_f'] == 1]['fixation_rate'].mean(),
+    "obstical right":sensor_df[sensor_df['obs_r'] == 1]['fixation_rate'].mean(),
+    "obstical left":sensor_df[sensor_df['obs_l'] == 1]['fixation_rate'].mean(),
 
-    "no wall front":    sensor_df[sensor_df['obs_f'] == 0]['fixation_rate'].mean(),
-    "no wall right":sensor_df[sensor_df['obs_r'] == 0]['fixation_rate'].mean(),
-    "no wall left":sensor_df[sensor_df['obs_l'] == 0]['fixation_rate'].mean(),
+    "no obstical front":    sensor_df[sensor_df['obs_f'] == 0]['fixation_rate'].mean(),
+    "no obstical right":sensor_df[sensor_df['obs_r'] == 0]['fixation_rate'].mean(),
+    "no obstical left":sensor_df[sensor_df['obs_l'] == 0]['fixation_rate'].mean(),
 }
 
 sensory_series = pd.Series(sensory_analysis).sort_values()
 
 plt.figure(figsize=(12, 7))
-colors = ['gray' if '(0' in x else 'skyblue' for x in sensory_series.index]
-colors = ['tomato' if 'wall' in name else color for name, color in zip(sensory_series.index, colors)]
+colors = ['gray' if 'line' in x else 'skyblue' for x in sensory_series.index]
+colors = ['tomato' if 'obstical' in name else color for name, color in zip(sensory_series.index, colors)]
 
 sensory_series.plot(kind='barh', color=colors, edgecolor='black', alpha=0.8)
 

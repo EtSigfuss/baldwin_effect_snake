@@ -1,4 +1,5 @@
 import random
+from collections import deque
 
 import torch
 import torch.nn as nn
@@ -49,6 +50,7 @@ class Linear_Q(nn.Module):
         self.linear2 = nn.Linear(hidden_size, output_size)
         self.hidden_size = hidden_size
         self.output_size = output_size
+        
 
 
         if solution is not None:
@@ -101,7 +103,10 @@ class Agent:
         self.gamma = 0.9
         self.model = Linear_Q(solution=solution, input_size=input_size,hidden_size=hidden_size, output_size=output_size)
         self.trainer = QTrainer(self.model, lr=0.001, gamma=self.gamma)
+        self.memory = deque(maxlen=1000)
 
+    def remember(self, state, action, reward, new_state, done):
+        self.memory.append((state, action, reward, new_state, done))
 
     def get_action(self, state, use_epsilon = True):
         #for purely evaluating the learned weights
@@ -123,9 +128,15 @@ class Agent:
 
         return move
     def train(self, old_state, action, reward, new_state, done):
-            # convert action to a vector then train.
-            # this is nessecarry to match q trainer argmax
-            action_vector = [0]*len(ACTIONS)
-            action_vector[action] = 1
-            
-            self.trainer.train_step(old_state, action_vector, reward, new_state, done)
+            self.remember(old_state, action, reward, new_state, done)
+
+            if len(self.memory) >= 2:
+                batch = random.sample(self.memory, 2)
+            else:
+                batch = list(self.memory)
+
+            for old_state, action, reward, new_state, done in batch:
+                action_vector = [0]*len(ACTIONS)
+                action_vector[action] = 1
+                
+                self.trainer.train_step(old_state, action_vector, reward, new_state, done)
